@@ -1,0 +1,9 @@
+---
+- id: 'save-token'
+  execute-command: '/root/bin/save-ssh-token-webhook'
+  incoming-payload-content-type: application/json
+  pass-environment-to-command:
+  - source: header
+    name: x-auth-request-user
+  - source: header
+    name: x-auth-request-access-token

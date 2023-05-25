@@ -1,0 +1,32 @@
+#!/usr/local/bin/ruby
+
+require 'base64'
+require 'json'
+
+token = ENV['HOOK_x-auth-request-access-token']
+user  = ENV['HOOK_x-auth-request-user']
+
+raise ArgumentError, "can't find hook data in environment" if token.nil? || user.nil?
+
+email = nil
+payload = nil
+begin
+  payload = JSON.parse(Base64.decode64(token.split('.')[1]))
+  email = payload['email']
+rescue => e
+  raise RuntimeError, "bad payload\n#{e}"
+end
+
+USERMAP = {
+  "foo@example.com" => "foobar"
+}
+
+if USERMAP[email].nil?
+  raise RuntimeError, "unknown email #{email}"
+end
+if USERMAP[email] != user
+  rasie RuntimeError, "user #{user}, email #{email} not ok"
+end
+
+STDERR.puts "email #{email}, user #{user} ok"
+STDERR.puts %x[ /usr/local/bin/sudo TOKEN=#{token} EMAIL=#{email} /root/bin/save-ssh-token-root #{user} 2>&1 ]
