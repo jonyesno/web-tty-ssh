@@ -1,8 +1,7 @@
-p
 # Overview
 
 * [WeTTY](https://github.com/butlerx/wetty) - "Terminal access in browser over http/https"
-* [OAuth2Proxy)](https://github.com/oauth2-proxy/oauth2-proxy) - "A reverse proxy and static file server that provides authentication using Providers"
+* [OAuth2Proxy](https://github.com/oauth2-proxy/oauth2-proxy) - "A reverse proxy and static file server that provides authentication using Providers"
 * [Dex](https://github.com/dexidp/dex) - "A federated OpenID Connect provider"
 * [GitHub](https://github.com/) - an OpenID provider with 2FA
 * [Nginx](https://nginx.org) - a web server supporting Lua middleware
