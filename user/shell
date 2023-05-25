@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+trace() {
+  local STAMP
+  STAMP=$( date '+%Y-%m-%dT%H:%M:%S' )
+  echo "[shell] ${STAMP} $*" >&2
+}
+
+fail() {
+  trace "FATAL $*"
+  exit 1
+}
+trap fail ERR
+
+if [[ ${TERM_PROGRAM:-} == "tmux" ]] ; then
+  trace "already inside tmux shell"
+  exit 0
+fi
+
+AGENT_ENV=~/.ssh/ssh-agent.env
+AGENT_SOCKET=~/.ssh/ssh-agent.socket
+TOKEN=~/.ssh/.token
+
+if [[ -z ${CA:-} ]] ; then
+  fail "set CA"
+fi
+
+if [[ ! -S ${AGENT_SOCKET} ]] ; then
+  if [[ -e ${AGENT_SOCKET} ]] ; then
+    fail "agent socket ${AGENT_SOCKET} exists but isn't a socket"
+  fi
+  trace "no agent socket, launching agent"
+  ssh-agent -a ${AGENT_SOCKET} > ${AGENT_ENV}
+  # shellcheck disable=1090
+  source ${AGENT_ENV}
+fi
+
+if [[ -f ${TOKEN} ]] ; then
+  trace "found token"
+  read -r _JWT _PRINCIPAL < ${TOKEN}
+  step ssh login \
+    --ca-url "${CA}" \
+    --root /usr/local/etc/ssl/step_ca.crt \
+    --token="${_JWT}" "${_PRINCIPAL}" \
+    --not-after=1h \
+    || trace "couldn't issue ssh key for ${_PRINCIPAL}"
+fi
+
+if tmux attach -t shell ; then
+  trace "attaching tmux"
+  exit
+fi
+
+trace "launching tmux"
+tmux new -s shell
