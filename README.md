@@ -1,5 +1,16 @@
 # Overview
 
+* A terminal in the browser (yikes!),
+* authenticated by OpenID Connect (ok, so hopefully MFA),
+* provided with an ephemeral SSH certificate for onward connections (hmm, really?),
+* that's issued from a private Certificate Authority using the same OIDC token (no key material lying around, alright!)
+
+or
+
+Use GitHub login for an emergency ~medical hologram~ jump shell
+
+# Moving parts
+
 * [WeTTY](https://github.com/butlerx/wetty) - "Terminal access in browser over http/https"
 * [OAuth2Proxy](https://github.com/oauth2-proxy/oauth2-proxy) - "A reverse proxy and static file server that provides authentication using Providers"
 * [Dex](https://github.com/dexidp/dex) - "A federated OpenID Connect provider"
