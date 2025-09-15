@@ -1,0 +1,39 @@
+#!/usr/local/bin/bash
+set -uo pipefail
+
+trace() {
+  local STAMP
+  STAMP=$( date '+%Y-%m-%dT%H:%M:%S' )
+  echo "[save-ssh-token-root] ${STAMP} $*" >&2
+}
+
+fail() {
+  trace "FATAL $*"
+    exit 1
+}
+trap fail ERR
+
+_USER=${1:-}
+if [[ -z "${_USER}" ]] ; then
+  fail "usage: save-ssh-token-root username"
+fi
+
+if [[ -z "${TOKEN:-}" ]] ; then
+  fail "no TOKEN"
+fi
+
+if [[ -z "${EMAIL:-}" ]] ; then
+  fail "no EMAIL"
+fi
+
+SSH="/home/${_USER}/.ssh"
+if [[ ! -d "${SSH}" ]] ; then
+  fail "${SSH} doesn't exist"
+fi
+
+TOKEN_FILE=${SSH}/.token
+touch ${TOKEN_FILE}
+chmod 0600 ${TOKEN_FILE}
+chown ${_USER}:${_USER} ${TOKEN_FILE}
+
+printf "%s %s\n" "${TOKEN}" "${EMAIL}" > ${TOKEN_FILE}
