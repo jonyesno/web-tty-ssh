@@ -53,6 +53,16 @@ Use GitHub login for an emergency ~medical hologram~ jump shell
 
 * Onward SSH authenticates the user using the SSH certificate
 
+# Deployment
+
+Separate hosts for
+
+* OAuth2Proxy and Dex
+* Nginx, WeTTY and webhook
+* Step CA
+
+FreeBSD jails are a good fit.
+
 # Notes
 
 Step CA issues a SSH certificate for the principal in the OIDC token supplied
@@ -80,7 +90,7 @@ OAuth2Proxy and Step CA use the same OAuth client details for Dex. This allows
 Step CA to use the token issued to OAuth2Proxy.  Dex [provides a facility for
 cross-client
 tokens](https://dexidp.io/docs/custom-scopes-claims-clients/#cross-client-trust-and-authorized-party)
-which in theory removes the need for using the client details, but these tokens
+which in theory removes the need for reusing the client details, but these tokens
 fail Step CA's audience checks.
 
 Having WeTTY SSH into the user's account is a weird, but likely ok, solution to
