@@ -1,0 +1,39 @@
+issuer: <%= @issuer %>
+
+storage:
+  type: sqlite3
+  config:
+    file: /var/db/dex/dex.db
+
+web:
+  http: <%= @ipaddress %>:5556
+
+oauth2:
+  skipApprovalScreen: true
+staticClients:
+  - id: <%= @tty_client_id %>
+    redirectURIs:
+      - '<%= @tty_redirect %>'
+    name: 'TTY'
+    secret: <%= @tty_client_secret %>
+  - id: <%= @ca_client_id %>
+    redirectURIs:
+      - '<%= @ca_redirect %>'
+    name: 'CA'
+    secret: <%= @ca_client_secret %>
+    trustedPeers:
+      - <%= @tty_client_id %>
+
+enablePasswordDB: false
+
+connectors:
+  - type: github
+    id: github
+    name: GitHub
+    config:
+      clientID: <%= @github_client_id %>
+      clientSecret: <%= @github_client_secret %>
+      redirectURI: '<%= @issuer %>/callback'
+      orgs:
+        - name: Ultraworld
+      loadAllGroups: false
