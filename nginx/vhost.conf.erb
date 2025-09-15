@@ -1,0 +1,96 @@
+server {
+  listen 80;
+  server_name <%= @fqdn %>;
+
+  rewrite ^/(.*) https://<%= @fqdn %>/$1 permanent;
+}
+
+server {
+  listen 443 ssl;
+  server_name <%= @fqdn %>;
+
+  ssl_certificate     /usr/local/etc/letsencrypt/live/<%= @fqdn %>/fullchain.pem;
+  ssl_certificate_key /usr/local/etc/letsencrypt/live/<%= @fqdn %>/privkey.pem;
+  ssl_session_cache   shared:SSL:10m;
+
+  location /dex {
+    proxy_pass       http://<%= @locals['dex'] %>:5556;
+    proxy_set_header Host                    $host;
+    proxy_set_header X-Real-IP               $remote_addr;
+    proxy_set_header X-Scheme                $scheme;
+  }
+  location /oauth2/ {
+    proxy_pass       http://<%= @locals['oauth2proxy'] %>:4180;
+    proxy_set_header Host                    $host;
+    proxy_set_header X-Real-IP               $remote_addr;
+    proxy_set_header X-Scheme                $scheme;
+    proxy_set_header X-Auth-Request-Redirect $request_uri;
+  }
+  location = /oauth2/auth {
+    proxy_pass       http://<%= @locals['oauth2proxy'] %>:4180;
+    proxy_set_header Host             $host;
+    proxy_set_header X-Real-IP        $remote_addr;
+    proxy_set_header X-Scheme         $scheme;
+    proxy_set_header Content-Length   "";
+    proxy_pass_request_body           off;
+  }
+
+  location = / {
+    return 301 /wetty;
+  }
+
+  location /wetty {
+    error_page 401 = /oauth2/sign_in;
+
+    proxy_pass http://<%= @locals['wetty'] %>:3000/wetty;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 43200000;
+
+    access_by_lua_block {
+      local res = ngx.location.capture("/oauth2/auth")
+      if res.status == ngx.HTTP_UNAUTHORIZED then
+        ngx.exit(res.status)
+      end
+      if res.status ~= ngx.HTTP_ACCEPTED then
+        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+      end
+
+      local email = res.header["X-Auth-Request-Email"]
+      local token = res.header["X-Auth-Request-Access-Token"]
+      if email == nil or token == nil then
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+      end
+
+      local usermap = { }
+<% @locals['usermap'].each do |user| -%>
+      usermap["<%= user['email'] %>"] = "<%= user['login'] %>"
+<% end -%>
+      local user = usermap[email]
+
+      if user == nil then
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+      end
+
+      ngx.req.set_header("Remote-User", user)
+
+      if ngx.var.uri == "/wetty" then
+        ngx.req.set_header("X-Auth-Request-User",  user)
+        ngx.req.set_header("X-Auth-Request-Access-Token", token)
+        local res = ngx.location.capture("/save-token", { copy_all_vars } )
+        ngx.log(ngx.ERR, res.status)
+      end
+    }
+  }
+
+  location /rekey {
+    # return 302 /oauth2/sign_out?rd=https%3A%2F%2F<%= @fqdn %>%2F;
+    return 302 /oauth2/sign_out;
+  }
+
+  location /save-token {
+    proxy_pass http://<%= @locals['webhook'] %>:9000/hooks/save-token;
+    internal;
+  }
+}
