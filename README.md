@@ -1,3 +1,5 @@
+NOTE: this repo has moved to https://codeberg.org/jonyesno/web-tty-ssh
+
 # Overview
 
 * A terminal in the browser (yikes!),
